@@ -227,6 +227,56 @@ a=fmtp:101 0-15
       end
     end
 
+    def invite_auth(user, password, opts = {})
+      from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
+      user, domain = parse_user user
+      recv opts.merge(response: 401, auth: true, optional: false)
+      msg = <<-MSG
+
+INVITE sip:#{to_addr} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: "#{@from_user}" <sip:#{from_addr}>;tag=[call_number]
+To: <sip:#{to_addr}>
+Call-ID: [call_id]
+CSeq: [cseq] INVITE
+Contact: <sip:#{from_addr};transport=[transport]>
+Max-Forwards: 100
+User-Agent: #{USER_AGENT}
+Content-Type: application/sdp
+Content-Length: [len]
+[authentication username=#{user} password=#{password}]
+#{opts.has_key?(:headers) ? opts.delete(:headers).sub(/\n*\Z/, "\n") : ''}
+v=0
+o=user1 53655765 2353687637 IN IP[local_ip_type] #{@adv_ip}
+s=-
+c=IN IP[media_ip_type] [media_ip]
+t=0 0
+m=audio [media_port] RTP/AVP 0 101
+a=rtpmap:0 PCMU/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-15
+      MSG
+      send msg, opts do |send|
+        send << doc.create_element('action') do |action|
+          action << doc.create_element('assignstr') do |assignstr|
+            assignstr['assign_to'] = "remote_addr"
+            assignstr['value']     = to_addr
+          end
+          action << doc.create_element('assignstr') do |assignstr|
+            assignstr['assign_to'] = "local_addr"
+            assignstr['value']     = from_addr
+          end
+          action << doc.create_element('assignstr') do |assignstr|
+            assignstr['assign_to'] = "call_addr"
+            assignstr['value']     = to_addr
+          end
+        end
+      end
+
+
+      receive_ok opts.merge(optional: false)
+    end
+
     #
     # Expect to receive a SIP INVITE
     #
