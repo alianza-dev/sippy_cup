@@ -787,7 +787,7 @@ Content-Length: 0
   private
 
     def to_addr
-      @to_addr ||= "[service]@#{@to_domain}:[remote_port]"
+      @to_addr ||= "#{@to_user}@#{@to_domain}:[remote_port]"
     end
 
     #TODO: SIPS support?
