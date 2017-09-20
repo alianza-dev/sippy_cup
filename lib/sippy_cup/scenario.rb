@@ -86,6 +86,7 @@ module SippyCup
     # @option options [String] :to_user The SIP user to send requests to. Alias for `:to` and deprecated in favour of the same.
     # @option options [String] :to The SIP user / address to send requests to.
     # @option options [Integer] :media_port The RTCP (media) port to bind to locally.
+    # @option options [String] :authentication Sipp authentication string.
     # @option options [String, Numeric] :max_concurrent The maximum number of concurrent calls to execute.
     # @option options [String, Numeric] :number_of_calls The maximum number of calls to execute in the test run.
     # @option options [String, Numeric] :calls_per_second The rate at which to initiate calls.
@@ -243,8 +244,8 @@ Contact: <sip:#{from_addr};transport=[transport]>
 Max-Forwards: 100
 User-Agent: #{USER_AGENT}
 Content-Type: application/sdp
+#{@authentication}
 Content-Length: [len]
-[authentication username=#{user} password=#{password}]
 #{opts.has_key?(:headers) ? opts.delete(:headers).sub(/\n*\Z/, "\n") : ''}
 v=0
 o=user1 53655765 2353687637 IN IP[local_ip_type] #{@adv_ip}
@@ -835,6 +836,9 @@ Content-Length: 0
         @to_user, @to_domain = args[:to].to_s.split('@')
       end
       @to_domain ||= "[remote_ip]"
+
+      @authentication ||= args[:authentication] if args.has_key?(:authentication)
+
     end
 
     def compile_media
