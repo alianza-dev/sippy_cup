@@ -49,6 +49,7 @@ module SippyCup
     def self.from_manifest(manifest, options = {})
       args = ActiveSupport::HashWithIndifferentAccess.new(Psych.safe_load(manifest)).merge options
 
+
       input_name = options.has_key?(:input_filename) ? File.basename(options[:input_filename]).gsub(/\.ya?ml/, '') : nil
       name = args.delete(:name) || input_name || 'My Scenario'
 
@@ -157,6 +158,7 @@ module SippyCup
       # FIXME: The DTMF mapping (101) is hard-coded. It would be better if we could
       # get this from the DTMF payload generator
       from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
+
       msg = <<-MSG
 
 INVITE sip:#{to_addr} SIP/2.0
@@ -273,9 +275,6 @@ a=fmtp:101 0-15
           end
         end
       end
-
-
-      receive_ok opts.merge(optional: false)
     end
 
     #

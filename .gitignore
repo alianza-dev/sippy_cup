@@ -8,3 +8,5 @@ tmp/
 /examples/*.xml
 /examples/*.pcap
 /examples/*.log
+.idea/
+.rake_tasks~
