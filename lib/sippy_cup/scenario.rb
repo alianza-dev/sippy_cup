@@ -230,10 +230,10 @@ a=fmtp:101 0-15
       end
     end
 
-    def invite_auth(user, password, opts = {})
+    def invite_auth(opts = {})
       from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
-      user, domain = parse_user user
       recv opts.merge(response: 401, auth: true, optional: false)
+      ack_answer_no_media()
       msg = <<-MSG
 
 INVITE sip:#{to_addr} SIP/2.0
@@ -509,6 +509,29 @@ Content-Length: 0
       BODY
       send msg, opts
       start_media
+    end
+
+    #
+    # Acknowledge a received answer message without starting media playback
+    #
+    # @param [Hash] opts A set of options to modify the message parameters
+    #
+    def ack_answer_no_media(opts = {})
+      msg = <<-BODY
+
+ACK [next_url] SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: "#{@from_user}" <sip:#{@from_user}@#{@adv_ip}:[local_port]>;tag=[call_number]
+To: <sip:#{to_addr}>[peer_tag_param]
+Call-ID: [call_id]
+CSeq: [cseq] ACK
+Contact: <sip:[$local_addr];transport=[transport]>
+Max-Forwards: 100
+User-Agent: #{USER_AGENT}
+Content-Length: 0
+[routes]
+    BODY
+    send msg, opts
     end
 
     #
