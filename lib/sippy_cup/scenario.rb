@@ -495,7 +495,7 @@ a=rtpmap:0 PCMU/8000
     def ack_answer(opts = {})
       msg = <<-BODY
 
-ACK [next_url] SIP/2.0
+ACK sip:#{to_addr} SIP/2.0
 Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
 From: "#{@from_user}" <sip:#{@from_user}@#{@adv_ip}:[local_port]>;tag=[call_number]
 To: <sip:#{to_addr}>[peer_tag_param]
@@ -519,7 +519,7 @@ Content-Length: 0
     def ack_answer_no_media(opts = {})
       msg = <<-BODY
 
-ACK [next_url] SIP/2.0
+ACK sip:#{to_addr} SIP/2.0
 Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
 From: "#{@from_user}" <sip:#{@from_user}@#{@adv_ip}:[local_port]>;tag=[call_number]
 To: <sip:#{to_addr}>[peer_tag_param]
@@ -569,7 +569,7 @@ Content-Length: 0
         when :info
           info = <<-INFO
 
-INFO [next_url] SIP/2.0
+INFO sip:#{to_addr} SIP/2.0
 Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
 From: "#{@from_user}" <sip:#{@from_user}@#{@adv_ip}:[local_port]>;tag=[call_number]
 To: <sip:#{to_addr}>[peer_tag_param]
