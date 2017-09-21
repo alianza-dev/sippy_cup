@@ -649,6 +649,30 @@ Content-Length: 0
     end
 
     #
+    # Send a BYE message with authentication
+    #
+    # @param [Hash] opts A set of options to modify the message parameters
+    #
+    def send_bye_auth(opts = {})
+      msg = <<-MSG
+
+BYE sip:[$call_addr] SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: <sip:[$local_addr]>;tag=[call_number]
+To: <sip:[$remote_addr]>;tag=[$remote_tag]
+Contact: <sip:[$local_addr];transport=[transport]>
+Call-ID: [call_id]
+CSeq: [cseq] BYE
+Max-Forwards: 100
+User-Agent: #{USER_AGENT}
+#{@authentication}
+Content-Length: 0
+[routes]
+      MSG
+      send msg, opts
+    end
+
+    #
     # Expect to receive a BYE message
     #
     # @param [Hash] opts A set of options to modify the expectation
@@ -698,6 +722,18 @@ Content-Length: 0
     #
     def hangup(opts = {})
       send_bye opts
+      receive_ok opts
+    end
+
+    #
+    # Shortcut to send a BYE, wait for authentication and wait for the acknowledgement
+    #
+    # @param [Hash] opts A set of options containing SIPp <recv> element attributes - will be passed to both the <send> and <recv> elements
+    #
+    def hangup_auth(opts = {})
+      send_bye opts
+      recv opts.merge(response: 401, auth: true, optional: false)
+      send_bye_auth opts
       receive_ok opts
     end
 
@@ -861,6 +897,8 @@ Content-Length: 0
 
       @authentication ||= args[:authentication] if args.has_key?(:authentication)
 
+      @no_media = args[:no_media] || false
+
     end
 
     def compile_media
@@ -904,15 +942,17 @@ Content-Length: 0
     end
 
     def start_media
-      @media = Media.new '127.0.0.255', 55555, '127.255.255.255', 44444
-      nop = doc.create_element('nop') { |nop|
-        nop << doc.create_element('action') { |action|
-          action << doc.create_element('exec')
+      unless @no_media
+        @media = Media.new '127.0.0.255', 55555, '127.255.255.255', 44444
+        nop = doc.create_element('nop') { |nop|
+          nop << doc.create_element('action') { |action|
+            action << doc.create_element('exec')
+          }
         }
-      }
 
-      @media_nodes << nop
-      scenario_node << nop
+        @media_nodes << nop
+        scenario_node << nop
+      end
     end
 
     def pause(msec)
