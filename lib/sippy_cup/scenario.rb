@@ -232,6 +232,8 @@ a=fmtp:101 0-15
 
     def invite_auth(opts = {})
       from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
+      invite(opts)
+      recv opts.merge(response: 100, optional: true)
       recv opts.merge(response: 401, auth: true, optional: false)
       ack_answer_no_media()
       msg = <<-MSG
