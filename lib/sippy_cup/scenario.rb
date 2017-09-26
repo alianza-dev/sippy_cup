@@ -740,9 +740,12 @@ Content-Length: 0
     #
     def hangup_auth(opts = {})
       send_bye opts
-      recv opts.merge(response: 401, auth: true, optional: false)
+      recv opts.merge(response: 401, auth: true, optional: true, next: "hangup_auth")
+      receive_ok opts.merge(optional: false, next: "hangup_end")
+      label "hangup_auth"
       send_bye_auth opts
       receive_ok opts
+      label "hangup_end"
     end
 
     # Create partition table for Call Length
