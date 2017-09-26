@@ -220,19 +220,20 @@ a=fmtp:101 0-15
       send_opts = opts.dup
       send_opts[:retrans] ||= DEFAULT_RETRANS
       user, domain = parse_user user
-      if password
-        send register_message(domain, user), send_opts
-        recv opts.merge(response: 401, auth: true, optional: false)
-        send register_auth(domain, user, password), send_opts
-        receive_ok opts.merge(optional: false)
-      elsif @authentication
-        send register_message(domain, user), send_opts
-        recv opts.merge(response: 401, auth: true, optional: false)
-        send register_auth2(domain, user), send_opts
-        receive_ok opts.merge(optional: false)
-      else
-        send register_message(domain, user), send_opts
+      send register_message(domain, user), send_opts
+
+      if password || @authentication
+        recv opts.merge(response: 401, auth: true, optional: true, next: "register_auth")
+        receive_ok opts.merge(optional: false, next: "register_end")
+        label "register_auth"
+        if password
+          send register_auth(domain, user, password), send_opts
+        else
+          send register_auth2(domain, user), send_opts
+        end
       end
+      receive_ok opts.merge(optional: false)
+      label "register_end"
     end
 
     def invite_auth(opts = {})
@@ -1015,6 +1016,13 @@ Content-Length: 0
 
     def handle_response(code, opts)
       optional_recv opts.merge(response: code)
+    end
+
+    def label(id)
+      label = Nokogiri::XML::Node.new 'label', doc
+      label["id"] = id
+      yield label if block_given?
+      scenario_node << label
     end
 
     def partition_table(name, min, max, interval)
