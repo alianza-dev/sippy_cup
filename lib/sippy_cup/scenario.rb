@@ -225,6 +225,11 @@ a=fmtp:101 0-15
         recv opts.merge(response: 401, auth: true, optional: false)
         send register_auth(domain, user, password), send_opts
         receive_ok opts.merge(optional: false)
+      elsif @authentication
+        send register_message(domain, user), send_opts
+        recv opts.merge(response: 401, auth: true, optional: false)
+        send register_auth2(domain, user), send_opts
+        receive_ok opts.merge(optional: false)
       else
         send register_message(domain, user), send_opts
       end
@@ -938,6 +943,24 @@ Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
 Max-Forwards: 20
 Expires: 3600
 [authentication username=#{user} password=#{password}]
+User-Agent: #{USER_AGENT}
+Content-Length: 0
+      AUTH
+    end
+
+    def register_auth2(domain, user)
+      <<-AUTH
+
+REGISTER sip:#{domain} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: <sip:#{user}@#{domain}>;tag=[call_number]
+To: <sip:#{user}@#{domain}>
+Call-ID: [call_id]
+CSeq: [cseq] REGISTER
+Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
+Max-Forwards: 20
+Expires: 3600
+#{@authentication}
 User-Agent: #{USER_AGENT}
 Content-Length: 0
       AUTH
