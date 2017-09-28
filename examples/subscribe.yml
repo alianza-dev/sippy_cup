@@ -1,0 +1,12 @@
+source: 192.0.2.15
+destination: 192.0.2.200
+max_concurrent: 10
+calls_per_second: 5
+number_of_calls: 20
+from_user: from_user
+to_user: to_user
+steps:
+  - send_subscribe
+  - send_subscribe to_user2
+  - subscribe
+  - subscribe to_user2

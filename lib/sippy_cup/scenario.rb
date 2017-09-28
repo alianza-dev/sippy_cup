@@ -317,6 +317,39 @@ a=fmtp:101 0-15
     end
     alias :wait_for_call :receive_invite
 
+    def subscribe(to = to_addr, opts = {})
+      send_subscribe to, opts
+      receive_ok opts.merge(rtd: "true", optional: "true", next: "notify")
+      recv opts.merge(response: 202, rtd: "true")
+      label "notify"
+      recv opts.merge(request: "NOTIFY")
+      send_simple_answer opts.merge(retrans: 500)
+    end
+
+    def send_subscribe(to = to_addr, opts = {})
+
+      from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
+
+      msg = <<-MSG
+
+SUBSCRIBE sip:#{to_addr} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: "#{@from_user}" <sip:#{from_addr}>;tag=[call_number]
+To: <sip:#{to}>
+Call-ID: [call_id]
+CSeq: [cseq] SUBSCRIBE
+Contact: sip:#{from_addr};transport=[transport]
+Max-Forwards: 100
+Event: presence
+Expires: 60
+Content-Type: application/pids+xml
+Allow-Events: presence
+Content-Length: 0
+      MSG
+      send msg, opts.merge(retrans: 500)
+
+    end
+
     #
     # Send a "100 Trying" response
     #
@@ -391,6 +424,21 @@ m=audio [media_port] RTP/AVP 0
 a=rtpmap:0 PCMU/8000
       MSG
       start_media
+      send msg, opts
+    end
+
+    def send_simple_answer(opts = {})
+      opts[:retrans] ||= DEFAULT_RETRANS
+      msg = <<-MSG
+SIP/2.0 200 OK
+[last_Via:]
+[last_From:]
+[last_To:]
+[last_Call-ID:]
+[last_CSeq:]
+Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+Content-Length: 0
+      MSG
       send msg, opts
     end
 
