@@ -319,11 +319,9 @@ a=fmtp:101 0-15
 
     def subscribe(to = to_addr, opts = {})
       send_subscribe to, opts
-      receive_ok opts.merge(rtd: "true", optional: "true", next: "notify")
+      recv opts.merge(response: 401, auth: true, optional: false)
+      send_subscribe_auth to, opts
       recv opts.merge(response: 202, rtd: "true")
-      label "notify"
-      recv opts.merge(request: "NOTIFY")
-      send_simple_answer opts.merge(retrans: 500)
     end
 
     def send_subscribe(to = to_addr, opts = {})
@@ -340,8 +338,33 @@ Call-ID: [call_id]
 CSeq: [cseq] SUBSCRIBE
 Contact: sip:#{from_addr};transport=[transport]
 Max-Forwards: 100
-Event: presence
+Event: dialog
 Expires: 60
+Content-Type: application/pids+xml
+Allow-Events: presence
+Content-Length: 0
+      MSG
+      send msg, opts.merge(retrans: 500)
+
+    end
+
+    def send_subscribe_auth(to = to_addr, opts = {})
+
+      from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
+
+      msg = <<-MSG
+
+SUBSCRIBE sip:#{to_addr} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: "#{@from_user}" <sip:#{from_addr}>;tag=[call_number]
+To: <sip:#{to}>
+Call-ID: [call_id]
+CSeq: [cseq] SUBSCRIBE
+Contact: sip:#{from_addr};transport=[transport]
+Max-Forwards: 100
+Event: dialog
+Expires: 60
+#{@authentication}
 Content-Type: application/pids+xml
 Allow-Events: presence
 Content-Length: 0
