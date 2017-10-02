@@ -317,6 +317,11 @@ a=fmtp:101 0-15
     end
     alias :wait_for_call :receive_invite
 
+    def receive_notify(opts = {})
+      recv opts.merge(request: "NOTIFY")
+      send_simple_answer opts
+    end
+
     def subscribe(to = to_addr, opts = {})
       send_subscribe to, opts
       recv opts.merge(response: 401, auth: true, optional: false)
