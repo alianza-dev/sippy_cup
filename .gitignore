@@ -10,3 +10,4 @@ tmp/
 /examples/*.log
 .idea/
 .rake_tasks~
+*.iml

@@ -236,6 +236,79 @@ a=fmtp:101 0-15
       label "register_end"
     end
 
+    def unregister(user, password = nil, opts = {})
+      send_opts = opts.dup
+      send_opts[:retrans] ||= DEFAULT_RETRANS
+      user, domain = parse_user user
+      send register_message(domain, user, 0), send_opts
+
+      if password || @authentication
+        recv opts.merge(response: 401, auth: true, optional: true, next: "unregister_auth")
+        receive_ok opts.merge(optional: false, next: "unregister_end")
+        label "unregister_auth"
+        if password
+          send register_auth(domain, user, password, 0), send_opts
+        else
+          send register_auth2(domain, user, 0), send_opts
+        end
+      end
+      receive_ok opts.merge(optional: false)
+      label "unregister_end"
+    end
+
+    def register_message(domain, user, expires = 600)
+      <<-BODY
+
+REGISTER sip:#{domain} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: <sip:#{user}@#{domain}>;tag=[call_number]
+To: <sip:#{user}@#{domain}>
+Call-ID: [call_id]
+CSeq: [cseq] REGISTER
+Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
+Max-Forwards: 10
+Expires: #{expires}
+User-Agent: #{USER_AGENT}
+Content-Length: 0
+      BODY
+    end
+
+    def register_auth(domain, user, password, expires = 600)
+      <<-AUTH
+
+REGISTER sip:#{domain} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: <sip:#{user}@#{domain}>;tag=[call_number]
+To: <sip:#{user}@#{domain}>
+Call-ID: [call_id]
+CSeq: [cseq] REGISTER
+Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
+Max-Forwards: 20
+Expires: #{expires}
+[authentication username=#{user} password=#{password}]
+User-Agent: #{USER_AGENT}
+Content-Length: 0
+      AUTH
+    end
+
+    def register_auth2(domain, user, expires = 600)
+      <<-AUTH
+
+REGISTER sip:#{domain} SIP/2.0
+Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
+From: <sip:#{user}@#{domain}>;tag=[call_number]
+To: <sip:#{user}@#{domain}>
+Call-ID: [call_id]
+CSeq: [cseq] REGISTER
+Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
+Max-Forwards: 20
+Expires: #{expires}
+#{@authentication}
+User-Agent: #{USER_AGENT}
+Content-Length: 0
+      AUTH
+    end
+
     def invite_auth(opts = {})
       from_addr = "#{@from_user}@#{@adv_ip}:[local_port]"
       invite(opts)
@@ -991,59 +1064,6 @@ Content-Length: 0
     def compile_media
       raise "Media not started" unless @media
       @media.compile!
-    end
-
-    def register_message(domain, user)
-      <<-BODY
-
-REGISTER sip:#{domain} SIP/2.0
-Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
-From: <sip:#{user}@#{domain}>;tag=[call_number]
-To: <sip:#{user}@#{domain}>
-Call-ID: [call_id]
-CSeq: [cseq] REGISTER
-Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
-Max-Forwards: 10
-Expires: 120
-User-Agent: #{USER_AGENT}
-Content-Length: 0
-      BODY
-    end
-
-    def register_auth(domain, user, password)
-      <<-AUTH
-
-REGISTER sip:#{domain} SIP/2.0
-Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
-From: <sip:#{user}@#{domain}>;tag=[call_number]
-To: <sip:#{user}@#{domain}>
-Call-ID: [call_id]
-CSeq: [cseq] REGISTER
-Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
-Max-Forwards: 20
-Expires: 3600
-[authentication username=#{user} password=#{password}]
-User-Agent: #{USER_AGENT}
-Content-Length: 0
-      AUTH
-    end
-
-    def register_auth2(domain, user)
-      <<-AUTH
-
-REGISTER sip:#{domain} SIP/2.0
-Via: SIP/2.0/[transport] #{@adv_ip}:[local_port];branch=[branch]
-From: <sip:#{user}@#{domain}>;tag=[call_number]
-To: <sip:#{user}@#{domain}>
-Call-ID: [call_id]
-CSeq: [cseq] REGISTER
-Contact: <sip:#{@from_user}@#{@adv_ip}:[local_port];transport=[transport]>
-Max-Forwards: 20
-Expires: 3600
-#{@authentication}
-User-Agent: #{USER_AGENT}
-Content-Length: 0
-      AUTH
     end
 
     def start_media
